@@ -16,13 +16,40 @@ import openedx.core.djangolib.model_mixins
 import simple_history.models
 import uuid
 
+from experiments.models import ExperimentData
+from openedx.features.course_duration_limits.config import EXPERIMENT_DATA_HOLDBACK_KEY, EXPERIMENT_ID
+from student.models import CourseAccessRole, CourseEnrollment, FBEEnrollmentExclusion
 
 # Functions from the following migrations need manual copying.
 # Move them and any dependencies into this file, then update the
 # RunPython operations to refer to the local versions:
 # student.migrations.0011_course_key_field_to_foreign_key
+
 # student.migrations.0025_auto_20191101_1846
+def populate_fbeenrollmentexclusion(apps, schema_editor):
+    holdback_entries = ExperimentData.objects.filter(
+        experiment_id=EXPERIMENT_ID,
+        key=EXPERIMENT_DATA_HOLDBACK_KEY,
+        value='True'
+    )
+    for holdback_entry in holdback_entries:
+        enrollments = [FBEEnrollmentExclusion(enrollment=enrollment)
+                       for enrollment in CourseEnrollment.objects.filter(user=holdback_entry.user)]
+        if enrollments:
+            FBEEnrollmentExclusion.objects.bulk_create(enrollments)
+
 # student.migrations.0029_add_data_researcher
+def add_data_researcher(apps, schema_editor):
+    """
+    Add a `data_researcher` role for everyone who is currently `staff` or `instructor`.
+    """
+    for role in CourseAccessRole.objects.filter(role__in=('staff', 'instructor')):
+        new_role, created = CourseAccessRole.objects.get_or_create(
+            user=role.user,
+            org=role.org,
+            course_id=role.course_id,
+            role='data_researcher'
+        )
 
 class Migration(migrations.Migration):
 
@@ -452,8 +479,8 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.RunPython(
-            code=student.migrations.0025_auto_20191101_1846.populate_fbeenrollmentexclusion,
-            reverse_code=django.db.migrations.operations.special.RunPython.noop,
+            code=student.populate_fbeenrollmentexclusion,
+            reverse_code=migrations.operations.special.RunPython.noop,
         ),
         migrations.CreateModel(
             name='AllowedAuthUser',
@@ -503,8 +530,8 @@ class Migration(migrations.Migration):
             bases=(simple_history.models.HistoricalChanges, models.Model),
         ),
         migrations.RunPython(
-            code=student.migrations.0029_add_data_researcher.add_data_researcher,
-            reverse_code=django.db.migrations.operations.special.RunPython.noop,
+            code=add_data_researcher,
+            reverse_code=migrations.operations.special.RunPython.noop,
         ),
         migrations.AddField(
             model_name='userprofile',
