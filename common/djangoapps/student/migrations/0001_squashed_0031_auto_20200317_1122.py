@@ -51,6 +51,7 @@ def add_data_researcher(apps, schema_editor):
             role='data_researcher'
         )
 
+
 class Migration(migrations.Migration):
 
     replaces = [('student', '0001_initial'), ('student', '0002_auto_20151208_1034'), ('student', '0003_auto_20160516_0938'), ('student', '0004_auto_20160531_1422'), ('student', '0005_auto_20160531_1653'), ('student', '0006_logoutviewconfiguration'), ('student', '0007_registrationcookieconfiguration'), ('student', '0008_auto_20161117_1209'), ('student', '0009_auto_20170111_0422'), ('student', '0010_auto_20170207_0458'), ('student', '0011_course_key_field_to_foreign_key'), ('student', '0012_sociallink'), ('student', '0013_delete_historical_enrollment_records'), ('student', '0014_courseenrollmentallowed_user'), ('student', '0015_manualenrollmentaudit_add_role'), ('student', '0016_coursenrollment_course_on_delete_do_nothing'), ('student', '0017_accountrecovery'), ('student', '0018_remove_password_history'), ('student', '0019_auto_20181221_0540'), ('student', '0020_auto_20190227_2019'), ('student', '0021_historicalcourseenrollment'), ('student', '0022_indexing_in_courseenrollment'), ('student', '0023_bulkunenrollconfiguration'), ('student', '0024_fbeenrollmentexclusion'), ('student', '0025_auto_20191101_1846'), ('student', '0026_allowedauthuser'), ('student', '0027_courseenrollment_mode_callable_default'), ('student', '0028_historicalmanualenrollmentaudit'), ('student', '0029_add_data_researcher'), ('student', '0030_userprofile_phone_number'), ('student', '0031_auto_20200317_1122')]
@@ -88,7 +89,7 @@ class Migration(migrations.Migration):
             name='CourseEnrollment',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('course_id', opaque_keys.edx.django.models.CourseKeyField(db_index=True, max_length=255)),
+                ('course', models.ForeignKey(db_constraint=False, on_delete=django.db.models.deletion.CASCADE, to='course_overviews.CourseOverview')),
                 ('created', models.DateTimeField(auto_now_add=True, db_index=True, null=True)),
                 ('is_active', models.BooleanField(default=True)),
                 ('mode', models.CharField(default=b'honor', max_length=100)),
@@ -371,21 +372,6 @@ class Migration(migrations.Migration):
                 'abstract': False,
             },
         ),
-        migrations.RenameField(
-            model_name='courseenrollment',
-            old_name='course_id',
-            new_name='course',
-        ),
-        migrations.AlterField(
-            model_name='courseenrollment',
-            name='course',
-            field=opaque_keys.edx.django.models.CourseKeyField(db_column='course_id', db_index=True, max_length=255),
-        ),
-        student.migrations.0011_course_key_field_to_foreign_key.NoSqlAlterField(
-            model_name='courseenrollment',
-            name='course',
-            field=models.ForeignKey(db_constraint=False, on_delete=django.db.models.deletion.CASCADE, to='course_overviews.CourseOverview'),
-        ),
         migrations.AlterModelOptions(
             name='courseenrollment',
             options={'ordering': ('user', 'course')},
@@ -402,11 +388,6 @@ class Migration(migrations.Migration):
                 ('social_link', models.CharField(blank=True, max_length=100)),
                 ('user_profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='social_links', to='student.UserProfile')),
             ],
-        ),
-        migrations.AlterField(
-            model_name='courseenrollment',
-            name='course',
-            field=models.ForeignKey(db_constraint=False, on_delete=django.db.models.deletion.DO_NOTHING, to='course_overviews.CourseOverview'),
         ),
         migrations.CreateModel(
             name='AccountRecovery',
