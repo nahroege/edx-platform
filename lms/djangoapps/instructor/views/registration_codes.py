@@ -14,7 +14,7 @@ from opaque_keys.edx.locator import CourseKey
 
 from lms.djangoapps.courseware.courses import get_course_by_id
 from lms.djangoapps.instructor.enrollment import get_email_params, send_mail_to_student
-from lms.djangoapps.instructor.views.api import require_level
+from lms.djangoapps.instructor.views.api import require_course_permission
 from shoppingcart.models import CourseRegistrationCode, RegistrationCodeRedemption
 from student.models import CourseEnrollment
 from util.json_request import JsonResponse
@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 @cache_control(no_cache=True, no_store=True, must_revalidate=True)
-@require_level('staff')
+@require_course_permission('instructor.view_registration')
 @require_GET
 def look_up_registration_code(request, course_id):
     """
@@ -58,7 +58,7 @@ def look_up_registration_code(request, course_id):
 
 
 @cache_control(no_cache=True, no_store=True, must_revalidate=True)
-@require_level('staff')
+@require_course_permission('instructor.view_registration')
 @require_POST
 def registration_code_details(request, course_id):
     """

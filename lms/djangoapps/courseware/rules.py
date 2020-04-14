@@ -22,6 +22,12 @@ from student.models import CourseAccessRole, CourseEnrollment
 from xmodule.course_module import CourseDescriptor
 from xmodule.error_module import ErrorDescriptor
 from xmodule.x_module import XModule
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag, WaffleFlag, WaffleFlagNamespace
+
+from student.roles import CourseDataResearcherRole
+
+# Waffle flag to enable the separate course outline page and full width content.
+RESEARCHER_ROLE = CourseWaffleFlag(WaffleFlagNamespace(name='instructor'), 'researcher')
 
 from .access import has_access
 
@@ -151,3 +157,29 @@ class HasStaffAccessToContent(Rule):
         if not is_global_staff:
             query &= Q(id__in=course_staff_or_instructor_courses) | Q(org__in=org_staff_or_instructor_courses)
         return query
+
+
+class HasRoleRule(Rule):
+    def __init__(self, role):
+        self.role = role
+
+    def check(self, user, instance=None):
+        if isinstance(instance, (CourseDescriptor, CourseOverview)):
+            course_key = instance.id
+        elif isinstance(instance, (ErrorDescriptor, XModule, XBlock)):
+            course_key = instance.scope_ids.usage_id.course_key
+        elif isinstance(instance, CourseKey):
+            course_key = instance
+        else:
+            course_key = CourseKey.from_string(str(instance))
+        qset = CourseAccessRole.objects.filter(
+            role=self.role,
+            user=user,
+            course_id=course_key,
+            )
+        qset = qset | CourseAccessRole.objects.filter(
+            role=self.role,
+            user=user,
+            org=course_key.org,
+        )
+        return qset.exists()
