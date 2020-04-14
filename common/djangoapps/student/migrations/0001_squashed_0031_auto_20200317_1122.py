@@ -460,7 +460,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.RunPython(
-            code=student.populate_fbeenrollmentexclusion,
+            code=populate_fbeenrollmentexclusion,
             reverse_code=migrations.operations.special.RunPython.noop,
         ),
         migrations.CreateModel(
