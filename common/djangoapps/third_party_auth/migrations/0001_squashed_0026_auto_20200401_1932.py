@@ -8,11 +8,19 @@ import openedx.core.lib.hash_utils
 import third_party_auth.models
 
 
-# Functions from the following migrations need manual copying.
-# Move them and any dependencies into this file, then update the
-# RunPython operations to refer to the local versions:
-# third_party_auth.migrations.0005_add_site_field
+# This should be a no-op, becuse we don't need to migrate any data on initial creation.
 # third_party_auth.migrations.0019_consolidate_slug
+
+# third_party_auth.migrations.0005_add_site_field
+def fill_oauth2_slug(apps, schema_editor):
+    """
+    Fill in the provider_slug to be the same as backend_name for backwards compatability.
+    """
+    OAuth2ProviderConfig = apps.get_model('third_party_auth', 'OAuth2ProviderConfig')
+    for config in OAuth2ProviderConfig.objects.all():
+        config.provider_slug = config.backend_name
+        config.save()
+
 
 class Migration(migrations.Migration):
 
@@ -67,9 +75,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('change_date', models.DateTimeField(auto_now_add=True, verbose_name='Change date')),
                 ('enabled', models.BooleanField(default=False, verbose_name='Enabled')),
-                ('icon_class', models.CharField(blank=True, default='fa-sign-in', help_text='The Font Awesome (or custom) icon class to use on the login button for this provider. Examples: fa-google-plus, fa-facebook, fa-linkedin, fa-sign-in, fa-university', max_length=50)),
                 ('name', models.CharField(help_text='Name of this provider (shown to users)', max_length=50)),
-                ('secondary', models.BooleanField(default=False, help_text='Secondary providers are displayed less prominently, in a separate list of "Institution" login providers.')),
                 ('skip_registration_form', models.BooleanField(default=False, help_text='If this option is enabled, users will not be asked to confirm their details (name, email, etc.) during the registration process. Only select this option for trusted providers that are known to provide accurate user information.')),
                 ('skip_email_verification', models.BooleanField(default=False, help_text='If this option is selected, users will not be required to confirm their email, and their account will be activated immediately upon registration.')),
                 ('lti_consumer_key', models.CharField(help_text='The name that the LTI Tool Consumer will use to identify itself', max_length=255)),
@@ -77,7 +83,6 @@ class Migration(migrations.Migration):
                 ('lti_consumer_secret', models.CharField(blank=True, default=openedx.core.lib.hash_utils.create_hash256, help_text='The shared secret that the LTI Tool Consumer will use to authenticate requests. Only this edX instance and this tool consumer instance should know this value. For increased security, you can avoid storing this in your database by leaving this field blank and setting SOCIAL_AUTH_LTI_CONSUMER_SECRETS = {"consumer key": "secret", ...} in your instance\'s Django setttigs (or lms.auth.json)', max_length=255)),
                 ('lti_max_timestamp_age', models.IntegerField(default=10, help_text='The maximum age of oauth_timestamp values, in seconds.')),
                 ('changed_by', models.ForeignKey(editable=False, null=True, on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL, verbose_name='Changed by')),
-                ('icon_image', models.FileField(blank=True, help_text='If there is no Font Awesome icon available for this provider, upload a custom image. SVG images are recommended as they can scale to any size.', upload_to='')),
                 ('visible', models.BooleanField(default=False, help_text='If this option is not selected, users will not be presented with the provider as an option to authenticate with on the login screen, but manual authentication using the correct link is still possible.')),
             ],
             options={
@@ -97,7 +102,6 @@ class Migration(migrations.Migration):
                 ('skip_registration_form', models.BooleanField(default=False, help_text='If this option is enabled, users will not be asked to confirm their details (name, email, etc.) during the registration process. Only select this option for trusted providers that are known to provide accurate user information.')),
                 ('skip_email_verification', models.BooleanField(default=False, help_text='If this option is selected, users will not be required to confirm their email, and their account will be activated immediately upon registration.')),
                 ('backend_name', models.CharField(default='tpa-saml', help_text="Which python-social-auth provider backend to use. 'tpa-saml' is the standard edX SAML backend.", max_length=50)),
-                ('idp_slug', models.SlugField(help_text='A short string uniquely identifying this provider. Cannot contain spaces and should be a usable as a CSS class. Examples: "ubc", "mit-staging"', max_length=30)),
                 ('entity_id', models.CharField(help_text='Example: https://idp.testshib.org/idp/shibboleth', max_length=255, verbose_name='Entity ID')),
                 ('metadata_source', models.CharField(help_text="URL to this provider's XML metadata. Should be an HTTPS URL. Example: https://www.testshib.org/metadata/testshib-providers.xml", max_length=255)),
                 ('attr_user_permanent_id', models.CharField(blank=True, help_text='URN of the SAML attribute that we can use as a unique, persistent user ID. Leave blank for default.', max_length=128, verbose_name='User ID Attribute')),
@@ -132,10 +136,10 @@ class Migration(migrations.Migration):
                 ('key', models.TextField(blank=True, verbose_name='Client ID')),
                 ('secret', models.TextField(blank=True, help_text='For increased security, you can avoid storing this in your database by leaving  this field blank and setting SOCIAL_AUTH_OAUTH_SECRETS = {"(backend name)": "secret", ...} in your instance\'s Django settings (or lms.auth.json)', verbose_name='Client Secret')),
                 ('other_settings', models.TextField(blank=True, help_text='Optional JSON object with advanced settings, if any.')),
+                ('provider_slug', models.SlugField(default='temp', help_text='A short string uniquely identifying this provider. Cannot contain spaces and should be a usable as a CSS class. Examples: "ubc", "mit-staging"', max_length=30)),
                 ('changed_by', models.ForeignKey(editable=False, null=True, on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL, verbose_name='Changed by')),
                 ('icon_image', models.FileField(blank=True, help_text='If there is no Font Awesome icon available for this provider, upload a custom image. SVG images are recommended as they can scale to any size.', upload_to='')),
                 ('visible', models.BooleanField(default=False, help_text='If this option is not selected, users will not be presented with the provider as an option to authenticate with on the login screen, but manual authentication using the correct link is still possible.')),
-                ('provider_slug', models.SlugField(default='temp', help_text='A short string uniquely identifying this provider. Cannot contain spaces and should be a usable as a CSS class. Examples: "ubc", "mit-staging"', max_length=30)),
             ],
             options={
                 'verbose_name': 'Provider Configuration (OAuth)',
@@ -143,7 +147,7 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.RunPython(
-            code=third_party_auth.migrations.0005_add_site_field.fill_oauth2_slug,
+            code=fill_oauth2_slug,
             reverse_code=django.db.migrations.operations.special.RunPython.noop,
         ),
         migrations.AddField(
@@ -257,22 +261,20 @@ class Migration(migrations.Migration):
             field=models.SlugField(default='default', help_text='A short string uniquely identifying this configuration. Cannot contain spaces. Examples: "ubc", "mit-staging"', max_length=30),
         ),
         migrations.AddField(
+            model_name='oauth2providerconfig',
+            name='slug',
+            field=models.SlugField(default='default', help_text='A short string uniquely identifying this provider. Cannot contain spaces and should be a usable as a CSS class. Examples: "ubc", "mit-staging"', max_length=30),
+        ),
+        migrations.AddField(
+            model_name='samlproviderconfig',
+            name='slug',
+            field=models.SlugField(default='default', help_text='A short string uniquely identifying this provider. Cannot contain spaces and should be a usable as a CSS class. Examples: "ubc", "mit-staging"', max_length=30),
+        ),
+        migrations.AddField(
             model_name='samlproviderconfig',
             name='saml_configuration',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='third_party_auth.SAMLConfiguration'),
         ),
-        migrations.RemoveField(
-            model_name='ltiproviderconfig',
-            name='icon_class',
-        ),
-        migrations.RemoveField(
-            model_name='ltiproviderconfig',
-            name='icon_image',
-        ),
-        migrations.RemoveField(
-            model_name='ltiproviderconfig',
-            name='secondary',
-        ),
         migrations.AddField(
             model_name='ltiproviderconfig',
             name='send_welcome_email',
@@ -292,28 +294,6 @@ class Migration(migrations.Migration):
             model_name='ltiproviderconfig',
             name='slug',
             field=models.SlugField(default='default', help_text='A short string uniquely identifying this provider. Cannot contain spaces and should be a usable as a CSS class. Examples: "ubc", "mit-staging"', max_length=30),
-        ),
-        migrations.AddField(
-            model_name='oauth2providerconfig',
-            name='slug',
-            field=models.SlugField(default='default', help_text='A short string uniquely identifying this provider. Cannot contain spaces and should be a usable as a CSS class. Examples: "ubc", "mit-staging"', max_length=30),
-        ),
-        migrations.AddField(
-            model_name='samlproviderconfig',
-            name='slug',
-            field=models.SlugField(default='default', help_text='A short string uniquely identifying this provider. Cannot contain spaces and should be a usable as a CSS class. Examples: "ubc", "mit-staging"', max_length=30),
-        ),
-        migrations.RunPython(
-            code=third_party_auth.migrations.0019_consolidate_slug.fill_slug_field,
-            reverse_code=django.db.migrations.operations.special.RunPython.noop,
-        ),
-        migrations.RemoveField(
-            model_name='oauth2providerconfig',
-            name='provider_slug',
-        ),
-        migrations.RemoveField(
-            model_name='samlproviderconfig',
-            name='idp_slug',
         ),
         migrations.AddField(
             model_name='ltiproviderconfig',
