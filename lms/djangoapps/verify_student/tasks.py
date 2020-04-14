@@ -92,7 +92,6 @@ def send_verification_status_email(context):
 
 
 @task(
-    name='lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user',
     base=BaseSoftwareSecureTask,
     bind=True,
     default_retry_delay=settings.SOFTWARE_SECURE_REQUEST_RETRY_DELAY,
