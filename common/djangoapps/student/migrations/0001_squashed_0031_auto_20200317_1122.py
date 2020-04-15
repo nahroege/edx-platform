@@ -61,6 +61,7 @@ class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('course_overviews', '0013_courseoverview_language'),
+        ('experiments', '0001_initial'),
         ('sites', '0002_alter_domain_unique'),
         ('course_overviews', '0014_courseoverview_certificate_available_date'),
     ]
