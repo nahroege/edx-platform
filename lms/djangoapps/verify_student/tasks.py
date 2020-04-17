@@ -42,6 +42,7 @@ class BaseSoftwareSecureTask(Task):
             'response_text': string, indicating the response text in case of failure.
         """
         from .models import SoftwareSecurePhotoVerification
+
         user_verification = SoftwareSecurePhotoVerification.objects.get(id=kwargs['user_verification_id'])
         if retval['response_ok']:
             user_verification.mark_submit()

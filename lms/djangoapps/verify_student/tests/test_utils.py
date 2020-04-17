@@ -149,17 +149,20 @@ class TestVerifyStudentUtils(unittest.TestCase):
         else:
             self.assertEqual(most_recent, manual_verification)
 
-    @mock.patch('lms.djangoapps.verify_student.tasks.log')
+    @mock.patch('lms.djangoapps.verify_student.utils.log')
     @mock.patch(
-        'lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user', mock.Mock(side_effect=Exception('error'))
+        'lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user.delay', mock.Mock(side_effect=Exception('error'))
     )
     def test_submit_request_to_ss(self, mock_log):
         """Tests that we log appropriate information when celery task creation fails."""
         user = UserFactory.create()
         attempt = SoftwareSecurePhotoVerification.objects.create(user=user)
-        submit_request_to_ss(user_verification=attempt, copy_id_photo_from=True)
+        attempt.mark_ready()
+        submit_request_to_ss(user_verification=attempt, copy_id_photo_from=None)
+
         mock_log.error.assert_called_with(
             "Software Secure submit request %r failed, result: %s",
             user.username,
             'error'
         )
+        self.assertTrue(attempt.status, SoftwareSecurePhotoVerification.STATUS.must_retry)
