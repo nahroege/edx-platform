@@ -38,8 +38,7 @@ def is_verification_expiring_soon(expiration_datetime):
     Returns True if verification is expiring within EXPIRING_SOON_WINDOW.
     """
     if expiration_datetime:
-        if (expiration_datetime - now()).days <= settings.VERIFY_STUDENT.get(
-        "EXPIRING_SOON_WINDOW"):
+        if (expiration_datetime - now()).days <= settings.VERIFY_STUDENT.get("EXPIRING_SOON_WINDOW"):
             return True
 
     return False

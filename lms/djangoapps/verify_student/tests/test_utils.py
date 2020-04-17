@@ -153,12 +153,11 @@ class TestVerifyStudentUtils(unittest.TestCase):
     @mock.patch(
         'lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user', mock.Mock(side_effect=Exception('error'))
     )
-    def test_submit_request_to_ss(self, mock_send_request_to_ss_for_user, mock_log):
+    def test_submit_request_to_ss(self, mock_log):
         """Tests that we log appropriate information when celery task creation fails."""
         user = UserFactory.create()
         attempt = SoftwareSecurePhotoVerification.objects.create(user=user)
         submit_request_to_ss(user_verification=attempt, copy_id_photo_from=True)
-        self.assertTrue(mock_send_request_to_ss_for_user.called)
         mock_log.error.assert_called_with(
             "Software Secure submit request %r failed, result: %s",
             user.username,
